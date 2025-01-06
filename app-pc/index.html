@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI助手</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.8.0/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.8.0/lib/highlight.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            background-color: #f5f5f5;
+        }
+        #chat-container {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            background-color: white;
+        }
+        #input-container {
+            display: flex;
+            gap: 10px;
+            height: 50px;
+        }
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        #send-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #send-button:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+        .ai-message {
+            background-color: #f0f0f0;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .ai-message pre {
+            background-color: #f8f8f8;
+            border-radius: 4px;
+            padding: 12px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .ai-message code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f8f8f8;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .ai-message pre code {
+            padding: 0;
+            background-color: transparent;
+        }
+        .ai-message p {
+            margin: 8px 0;
+        }
+        .ai-message h1, .ai-message h2, .ai-message h3,
+        .ai-message h4, .ai-message h5, .ai-message h6 {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+        .ai-message ul, .ai-message ol {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+        .ai-message blockquote {
+            border-left: 4px solid #ddd;
+            margin: 8px 0;
+            padding-left: 16px;
+            color: #666;
+        }
+        .ai-message table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0;
+        }
+        .ai-message table th,
+        .ai-message table td {
+            border: 1px solid #ddd;
+            padding: 6px 12px;
+            text-align: left;
+        }
+        .ai-message table th {
+            background-color: #f8f8f8;
+        }
+        .ai-message img {
+            max-width: 100%;
+            height: auto;
+        }
+        .ai-message a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .ai-message a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .loading:after {
+            content: '...';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container"></div>
+    <div id="input-container">
+        <input type="text" id="message-input" placeholder="输入您的问题...">
+        <button id="send-button" onclick="sendMessage()">发送</button>
+    </div>
+
+    <script>
+        marked.setOptions({
+            highlight: function(code, language) {
+                if (language && hljs.getLanguage(language)) {
+                    return hljs.highlight(code, { language }).value;
+                }
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true,
+            gfm: true
+        });
+
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        function appendMessage(message, className) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${className}`;
+            
+            if (className === 'ai-message') {
+                messageDiv.innerHTML = marked.parse(message);
+                messageDiv.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightBlock(block);
+                });
+            } else {
+                messageDiv.textContent = message;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+
+            appendMessage(message, 'user-message');
+            messageInput.value = '';
+
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message ai-message';
+            loadingDiv.innerHTML = '正在思考中<span class="loading"></span>';
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            try {
+                const response = await fetch('http://127.0.0.1:9000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                chatContainer.removeChild(loadingDiv);
+                appendMessage(data.response, 'ai-message');
+            } catch (error) {
+                chatContainer.removeChild(loadingDiv);
+                appendMessage('抱歉，发生了错误，请稍后重试。', 'ai-message');
+            } finally {
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        window.onload = () => {
+            messageInput.focus();
+        };
+    </script>
+</body>
+</html> 

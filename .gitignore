@@ -1,0 +1,9 @@
+/app-pc/node_modules/*
+/app-pc/models/*
+/app-pc/dist/*
+/app-pc/server.exe
+/server/models/*
+/server/build/*
+/server/dist/*
+**.spec
+**package-lock.json

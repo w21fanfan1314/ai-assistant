@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # 导入CORS
 from modelscope import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
 # 创建Flask应用实例
 app = Flask(__name__)
+CORS(app)  # 启用CORS
 
 class DialogueAgent:
     def __init__(self, model_dir='./models/charent/ChatLM-mini-Chinese', device=None):
@@ -63,14 +65,18 @@ def chat():
     返回:
     JSON: 包含生成的响应文本的JSON对象。
     """
-    # 从请求中获取JSON数据
-    data = request.get_json()
-    # 从JSON数据中获取用户输入的消息
-    user_input = data.get('message', '')
-    # 使用DialogueAgent生成响应
-    response = dialogue_agent.generate_response(user_input)
-    # 将响应以JSON格式返回
-    return jsonify({'response': response})
+    try:
+        # 从请求中获取JSON数据
+        data = request.get_json()
+        # 从JSON数据中获取用户输入的消息
+        user_input = data.get('message', '')
+        # 使用DialogueAgent生成响应
+        response = dialogue_agent.generate_response(user_input)
+        # 将响应以JSON格式返回
+        return jsonify({'response': response})
+    except Exception as e:
+        # 如果发生异常，返回错误信息
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # 运行Flask应用，开启调试模式，并指定端口为9000
