@@ -9,7 +9,7 @@ function startServer() {
   let serverPath;
   if (app.isPackaged) {
     // 打包后的路径
-    serverPath = path.join(process.resourcesPath, 'server.exe');
+    serverPath = path.join(path.join(process.resourcesPath, 'app'), 'server.exe');
   } else {
     // 开发环境路径
     serverPath = path.join(app.getAppPath(), 'server.exe');

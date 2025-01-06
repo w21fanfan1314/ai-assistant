@@ -80,4 +80,4 @@ def chat():
 
 if __name__ == '__main__':
     # 运行Flask应用，开启调试模式，并指定端口为9000
-    app.run(debug=True, port=9000)
+    app.run(debug=False, port=9000)

@@ -1,0 +1,6 @@
+transformers
+modelscope
+flask_cors
+flask
+torch
+pyinstaller

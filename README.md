@@ -7,6 +7,11 @@ python3 server.py
 ```python
 flask
 modelscope
-
+```
 ## 模型
 https://www.modelscope.cn/models/charent/ChatLM-mini-Chinese/summary
+
+## 打包server命令
+```python
+pyinstaller -F server.py
+```
