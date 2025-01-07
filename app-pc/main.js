@@ -5,37 +5,59 @@ const { spawn } = require('child_process');
 let serverProcess = null;
 
 function startServer() {
-  // 获取 server.exe 的路径
-  let serverPath;
-  if (app.isPackaged) {
-    // 打包后的路径
-    serverPath = path.join(path.join(process.resourcesPath, 'app'), 'server.exe');
-  } else {
-    // 开发环境路径
-    serverPath = path.join(app.getAppPath(), 'server.exe');
+  try {
+    // 获取 server.exe 的路径
+    let serverPath;
+    if (app.isPackaged) {
+      // 打包后的路径
+      serverPath = path.join(path.join(process.resourcesPath, 'app'), 'server.exe');
+    } else {
+      // 开发环境路径
+      serverPath = path.join(app.getAppPath(), 'server.exe');
+    }
+
+    console.log('Server path:', serverPath);
+    
+    // 确保文件存在
+    if (!require('fs').existsSync(serverPath)) {
+      console.error('Server executable not found at:', serverPath);
+      return;
+    }
+
+    // 启动 server.exe
+    serverProcess = spawn(serverPath, [], {
+      windowsHide: true,
+      // 添加工作目录配置
+      cwd: path.dirname(serverPath),
+      // 添加环境变量
+      env: process.env,
+      // 添加 shell 选项
+      shell: true
+    });
+
+    // 监听服务器输出
+    serverProcess.stdout.on('data', (data) => {
+      console.log(`Server output: ${data.toString()}`);
+    });
+
+    serverProcess.stderr.on('data', (data) => {
+      console.error(`Server error: ${data.toString()}`);
+    });
+
+    // 监听服务器退出
+    serverProcess.on('close', (code) => {
+      console.error(`Server process exited with code ${code}`);
+      serverProcess = null;
+    });
+
+    serverProcess.on('error', (err) => {
+      console.error('Failed to start server:', err);
+      serverProcess = null;
+    });
+
+  } catch (error) {
+    console.error('Error starting server:', error);
   }
-  
-  console.log('Server path:', serverPath);
-  
-  // 启动 server.exe
-  serverProcess = spawn(serverPath, [], {
-    windowsHide: true // 隐藏命令行窗口
-  });
-
-  // 监听服务器输出（可选）
-  serverProcess.stdout.on('data', (data) => {
-    console.log(`Server output: ${data}`);
-  });
-
-  serverProcess.stderr.on('data', (data) => {
-    console.error(`Server error: ${data}`);
-  });
-
-  // 监听服务器退出
-  serverProcess.on('close', (code) => {
-    console.log(`Server process exited with code ${code}`);
-    serverProcess = null;
-  });
 }
 
 function stopServer() {
